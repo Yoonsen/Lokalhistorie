@@ -165,7 +165,10 @@ def word_form(word):
     r = requests.get("https://api.nb.no/ngram/word_form", params = {'word': word})
     return r.json()
 
-
+def word_lemma(word):
+    """ Find lemma form for a given word form """
+    r = requests.get("https://api.nb.no/ngram/word_lemma", params = {'word': word})
+    return r.json()
 
 
 def word_freq(urn, words):
@@ -1351,7 +1354,16 @@ def urn_concordance(urns = None, word = None, size = 5, before = None, after = N
     args, _, _, values = inspect.getargvalues(frame)
     query = {i:values[i] for i in args if values[i] != None and i != 'word'}
     return get_urnkonk(word, query)
-    
+
+from random import sample
+def konk(word, urns=None, before=5, after=5):
+    if urns == None:
+        print('URNer mangler')
+        return
+    urner = nb.refine_book_urn(words=[word], urns=urns)
+    return urn_concordance(word=word, urns = sample(urner, min(20, len(urner))),before = before, after = after)
+
+
 def concordance(word = None, corpus='bok', author=None, title=None, subtitle=None, lang=None, ddk=None, subject=None,
                yearfrom = None, yearto=None, before=None, after=None, size=5, gender=None, offset=None, kind='html'):
     if word == None:
@@ -1498,6 +1510,18 @@ def frame(something, name = None):
                 res.columns = name + list(range(len(name), number_of_columns))
         else:
             res.columns = [name] + list(range(1, number_of_columns))
+    return res
+
+def frame_sort(frame, by = 0, ascending = False):
+    """sort a dataframe, if value of key is a column it will sort by that, otherwise value is
+    interpreted as an index into the columns"""
+    if by in frame.columns:
+        res = frame.sort_values(by = by, ascending = ascending)
+    elif isinstance(by, int):
+        col = max(by, len(frame.columns) - 1)
+        res = frame.sort_values(by = frame.columns[col], ascending = ascending)
+    else:
+        res = frame.sort_values(by = frame.columns[0], ascending = ascending)
     return res
 
 def get_urns_from_docx(document):
